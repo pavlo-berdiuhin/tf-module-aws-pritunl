@@ -20,7 +20,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_iam"></a> [iam](#module\_iam) | terraform-aws-modules/iam/aws | 5.55.0 |
+| <a name="module_iam"></a> [iam](#module\_iam) | terraform-aws-modules/iam/aws//modules/iam-assumable-role | 5.55.0 |
 
 ## Resources
 

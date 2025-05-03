@@ -100,9 +100,10 @@ resource "aws_route53_record" "vpn" {
 # IAM
 ####################################################################################################
 module "iam" {
-  source  = "terraform-aws-modules/iam/aws"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
   version = "5.55.0"
 
+  create_role             = true
   role_name               = local.name
   role_requires_mfa       = false
   create_instance_profile = true
