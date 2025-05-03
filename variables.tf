@@ -27,6 +27,7 @@ variable "team" {
 variable "deployment_name" {
   type        = string
   description = "Deployment name"
+  default     = "vpn"
 }
 
 variable "additional_tags" {

@@ -26,7 +26,7 @@ data "aws_route53_zone" "this" {
 }
 
 locals {
-  name = "${var.stack}-${var.environment}-ovpn"
+  name = "${var.deployment_name}-${var.environment}-${var.stack}"
 }
 
 ####################################################################################################

@@ -1,7 +1,7 @@
 # tf-module-aws-ovpn
 
 ## Inspired by:
-- https://docs.pritunl.com/docs/installation
+- https://github.com/angristan/openvpn-install
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -39,7 +39,7 @@
 |------|-------------|------|---------|:--------:|
 | <a name="input_additional_tags"></a> [additional\_tags](#input\_additional\_tags) | Additional tags for all resources | `map(string)` | `{}` | no |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region | `string` | n/a | yes |
-| <a name="input_deployment_name"></a> [deployment\_name](#input\_deployment\_name) | Deployment name | `string` | n/a | yes |
+| <a name="input_deployment_name"></a> [deployment\_name](#input\_deployment\_name) | Deployment name | `string` | `"vpn"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment | `string` | n/a | yes |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | Instance type | `string` | `"t4g.micro"` | no |
 | <a name="input_owner"></a> [owner](#input\_owner) | Owner | `string` | n/a | yes |
