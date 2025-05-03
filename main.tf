@@ -2,6 +2,7 @@ provider "aws" {
   region = var.aws_region
   default_tags {
     tags = merge({
+      Name        = local.name
       terraform   = "true"
       owner       = var.owner
       environment = var.environment
@@ -12,21 +13,17 @@ provider "aws" {
 }
 
 data "aws_ami" "this" {
-  owners      = ["131827586825"]
+  owners      = ["099720109477"]
   most_recent = true
 
   filter {
     name   = "name"
-    values = ["OL9.*"]
-  }
-  filter {
-    name   = "architecture"
-    values = ["x86_64"]
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
   }
 }
 
 data "aws_route53_zone" "this" {
-  id = var.zone_id
+  zone_id = var.zone_id
 }
 
 locals {
@@ -42,41 +39,36 @@ resource "aws_instance" "this" {
   vpc_security_group_ids      = ["${aws_security_group.this.id}"]
   associate_public_ip_address = true
   subnet_id                   = var.subnet_id
-  iam_instance_profile        = module.iam.instance_profile_name
+  iam_instance_profile        = module.iam.iam_instance_profile_name
   user_data_replace_on_change = true
+  credit_specification {
+    cpu_credits = "standard"
+  }
   root_block_device {
     volume_type = "gp3"
     volume_size = 20
   }
-  user_data = <<USERDATA
-    sudo tee /etc/yum.repos.d/mongodb-org.repo << EOF
-    [mongodb-org]
-    name=MongoDB Repository
-    baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/x86_64/
-    gpgcheck=1
-    enabled=1
-    gpgkey=https://pgp.mongodb.com/server-8.0.asc
-    EOF
+  user_data = <<EOF
+    #!/bin/bash -xe
 
-    sudo tee /etc/yum.repos.d/pritunl.repo << EOF
-    [pritunl]
-    name=Pritunl Repository
-    baseurl=https://repo.pritunl.com/stable/yum/oraclelinux/9/
-    gpgcheck=1
-    enabled=1
-    gpgkey=https://raw.githubusercontent.com/pritunl/pgp/master/pritunl_repo_pub.asc
-    EOF
+    sudo echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" >> /etc/apt/sources.list.d/mongodb-org.list
+    sudo echo "deb [ signed-by=/usr/share/keyrings/openvpn-repo.gpg ] https://build.openvpn.net/debian/openvpn/stable noble main" >> /etc/apt/sources.list.d/openvpn.list
+    sudo echo "deb [ signed-by=/usr/share/keyrings/pritunl.gpg ] https://repo.pritunl.com/stable/apt noble main" >> /etc/apt/sources.list.d/pritunl.list
 
-    sudo dnf -y update
+    sudo apt --assume-yes install gnupg
 
-    sudo dnf -y remove iptables-services
-    sudo systemctl stop firewalld.service
-    sudo systemctl disable firewalld.service
+    curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor --yes
+    curl -fsSL https://swupdate.openvpn.net/repos/repo-public.gpg | sudo gpg -o /usr/share/keyrings/openvpn-repo.gpg --dearmor --yes
+    curl -fsSL https://raw.githubusercontent.com/pritunl/pgp/master/pritunl_repo_pub.asc | sudo gpg -o /usr/share/keyrings/pritunl.gpg --dearmor --yes
 
-    sudo dnf -y install pritunl pritunl-openvpn wireguard-tools mongodb-org
-    sudo systemctl enable mongod pritunl
-    sudo systemctl start mongod pritunl
-  USERDATA
+    sudo apt update
+    sudo apt --assume-yes install pritunl openvpn mongodb-org wireguard wireguard-tools
+
+    sudo ufw disable
+
+    sudo systemctl start pritunl mongod
+    sudo systemctl enable pritunl mongod
+  EOF
 
   tags = {
     Name = local.name
@@ -94,6 +86,12 @@ resource "aws_security_group" "this" {
   description = "Allow VPN access to the ${local.name} instance"
   vpc_id      = var.vpc_id
 
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   ingress {
     from_port   = 443
     to_port     = 443

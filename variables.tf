@@ -54,5 +54,5 @@ variable "zone_id" {
 variable "instance_type" {
   type        = string
   description = "Instance type"
-  default     = "t3a.micro"
+  default     = "t3a.small"
 }
