@@ -1,7 +1,7 @@
 # tf-module-aws-ovpn
 
 ## Inspired by:
-- https://github.com/angristan/openvpn-install
+- https://docs.pritunl.com/docs/installation
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
