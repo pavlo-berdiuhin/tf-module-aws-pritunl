@@ -70,10 +70,6 @@ resource "aws_instance" "this" {
     sudo systemctl enable pritunl mongod
   EOF
 
-  tags = {
-    Name = local.name
-  }
-
   lifecycle {
     ignore_changes = [ami]
   }
