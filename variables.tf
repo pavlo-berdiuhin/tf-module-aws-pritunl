@@ -24,8 +24,34 @@ variable "team" {
   default     = "devops"
 }
 
+variable "deployment_name" {
+  type        = string
+  description = "Deployment name"
+}
+
 variable "additional_tags" {
   type        = map(string)
   description = "Additional tags for all resources"
   default     = {}
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
+
+variable "subnet_id" {
+  type        = string
+  description = "Subnet ID"
+}
+
+variable "zone_id" {
+  type        = string
+  description = "Route53 zone ID"
+}
+
+variable "instance_type" {
+  type        = string
+  description = "Instance type"
+  default     = "t4g.micro"
 }
