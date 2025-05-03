@@ -11,13 +11,17 @@ provider "aws" {
   }
 }
 
-data "aws_ami" "ubuntu" {
-  owners      = ["099720109477"]
+data "aws_ami" "this" {
+  owners      = ["131827586825"]
   most_recent = true
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"]
+    values = ["OL9.*"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
   }
 }
 
@@ -30,27 +34,49 @@ locals {
 }
 
 ####################################################################################################
-# OpenVPN
+# VPN instance
 ####################################################################################################
 resource "aws_instance" "this" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = data.aws_ami.this.id
   instance_type               = var.instance_type
   vpc_security_group_ids      = ["${aws_security_group.this.id}"]
   associate_public_ip_address = true
   subnet_id                   = var.subnet_id
   iam_instance_profile        = module.iam.instance_profile_name
   user_data_replace_on_change = true
-  user_data                   = <<EOF
-    #!/usr/bin/env bash
-    set -x
-    /usr/bin/yum update -y
-    curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
-    chmod +x openvpn-install.sh
-    sudo AUTO_INSTALL=y \
-      APPROVE_IP=${aws_eip.this.public_ip} \
-      ENDPOINT=${aws_route53_record.vpn.name} \
-      ./openvpn-install.sh
+  root_block_device {
+    volume_type = "gp3"
+    volume_size = 20
+  }
+  user_data = <<USERDATA
+    sudo tee /etc/yum.repos.d/mongodb-org.repo << EOF
+    [mongodb-org]
+    name=MongoDB Repository
+    baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/x86_64/
+    gpgcheck=1
+    enabled=1
+    gpgkey=https://pgp.mongodb.com/server-8.0.asc
     EOF
+
+    sudo tee /etc/yum.repos.d/pritunl.repo << EOF
+    [pritunl]
+    name=Pritunl Repository
+    baseurl=https://repo.pritunl.com/stable/yum/oraclelinux/9/
+    gpgcheck=1
+    enabled=1
+    gpgkey=https://raw.githubusercontent.com/pritunl/pgp/master/pritunl_repo_pub.asc
+    EOF
+
+    sudo dnf -y update
+
+    sudo dnf -y remove iptables-services
+    sudo systemctl stop firewalld.service
+    sudo systemctl disable firewalld.service
+
+    sudo dnf -y install pritunl pritunl-openvpn wireguard-tools mongodb-org
+    sudo systemctl enable mongod pritunl
+    sudo systemctl start mongod pritunl
+  USERDATA
 
   tags = {
     Name = local.name
